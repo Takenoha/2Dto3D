@@ -34,7 +34,7 @@ def generate_3d_model(image_path, output_path, target_faces=1000):
     gray_image[mask == 0] = 0
     
     # 画像を平滑化するためにガウシアンブラーを適用する
-    blurred_image = gray_image  # cv2.GaussianBlur(gray_image, (5, 5), 0)
+    blurred_image = cv2.GaussianBlur(gray_image, (5, 5), 0)
     
     # ピクセル値を0から1の範囲に正規化する
     normalized_image = blurred_image / 255.0
@@ -162,7 +162,7 @@ def generate_3d_model(image_path, output_path, target_faces=1000):
     new_boundary_vertices = []
     height_offset = 10.0  # 1cm = 10mm
     used_vertices = set()
-    for i in boundary_edges:
+    for i in range(len(boundary_edges)):
         used_vertices.add(boundary_edges[i][0])
         used_vertices.add(boundary_edges[i][1])
         if boundary_edges[i][0] not in used_vertices:
@@ -175,53 +175,54 @@ def generate_3d_model(image_path, output_path, target_faces=1000):
             tmp2[2] += height_offset
             new_boundary_vertices.append(tmp2)    
             used_vertices.add(boundary_edges[i][1])
-    new_boundary_vertices = np.array(new_boundary_vertices)
-    before_add_vertices = len(vertices)
-    vertices = np.vstack((vertices, new_boundary_vertices))
-    print("New boundary vertices:", new_boundary_vertices)
     
-    # 新しい頂点を使って新しい面を作る
-    new_faces = []
-    
-    for i in range(len(boundary_edges)):
-        if vertices[boundary_edges[i][0]][1] >= 0.0 and vertices[boundary_edges[i][1]][1] >= 0.0:
-            if vertices[boundary_edges[i][0]][0] > vertices[boundary_edges[i][1]][0]:
-                new_faces.append([len(vertices)-before_add_vertices + i, boundary_edges[i][1], boundary_edges[i][0]])
-                new_faces.append([len(vertices)-before_add_vertices + i, len(vertices)-before_add_vertices + i+1, boundary_edges[i][0]])            
-            elif vertices[boundary_edges[i][0]][0] < vertices[boundary_edges[i][1]][0]:
-                new_faces.append([len(vertices)-before_add_vertices + i,boundary_edges[i][0] , boundary_edges[i][1]])
-                new_faces.append([len(vertices)-before_add_vertices + i, len(vertices)-before_add_vertices + i+1, boundary_edges[i][1]])
-            else:
-                if vertices[boundary_edges[i][0]][1] > vertices[boundary_edges[i][1]][1]:
-                    new_faces.append([len(vertices)-before_add_vertices + i, boundary_edges[i][0], boundary_edges[i][1]])
-                    new_faces.append([len(vertices)-before_add_vertices + i+1, len(vertices)-before_add_vertices + i+0, boundary_edges[i][0]])
-                else:
+    # 新しい頂点を使って新しい面を作る前に、new_boundary_verticesが空でないことを確認する
+    if len(new_boundary_vertices) > 0:
+        before_add_vertices = len(vertices)
+        vertices = np.vstack((vertices, new_boundary_vertices))
+        print("New boundary vertices:", new_boundary_vertices)
+
+        # 新しい頂点を使って新しい面を作る
+        new_faces = []
+        
+        for i in range(len(boundary_edges)):
+            if vertices[boundary_edges[i][0]][1] >= 0.0 and vertices[boundary_edges[i][1]][1] >= 0.0:
+                if vertices[boundary_edges[i][0]][0] > vertices[boundary_edges[i][1]][0]:
                     new_faces.append([len(vertices)-before_add_vertices + i, boundary_edges[i][1], boundary_edges[i][0]])
-                    new_faces.append([len(vertices)-before_add_vertices + i+1, len(vertices)-before_add_vertices + i+0, boundary_edges[i][1]])
-        elif vertices[boundary_edges[i][0]][1] < 0.0 and vertices[boundary_edges[i][1]][1] < 0.0:
-            if vertices[boundary_edges[i][0]][0] > vertices[boundary_edges[i][1]][0]:
-                new_faces.append([boundary_edges[i][1], boundary_edges[i][0], len(vertices)-before_add_vertices + i])
-                new_faces.append([len(vertices)-before_add_vertices + i, boundary_edges[i][0], boundary_edges[i][1]])
-            elif vertices[boundary_edges[i][0]][0] < vertices[boundary_edges[i][1]][0]:
-                new_faces.append([boundary_edges[i][0], boundary_edges[i][1], len(vertices)-before_add_vertices + i])
-                new_faces.append([len(vertices)-before_add_vertices + i, boundary_edges[i][0], boundary_edges[i][1]])
+                    new_faces.append([len(vertices)-before_add_vertices + i, len(vertices)-before_add_vertices + i+1, boundary_edges[i][0]])            
+                elif vertices[boundary_edges[i][0]][0] < vertices[boundary_edges[i][1]][0]:
+                    new_faces.append([len(vertices)-before_add_vertices + i,boundary_edges[i][0] , boundary_edges[i][1]])
+                    new_faces.append([len(vertices)-before_add_vertices + i, len(vertices)-before_add_vertices + i+1, boundary_edges[i][1]])
+                else:
+                    if vertices[boundary_edges[i][0]][1] > vertices[boundary_edges[i][1]][1]:
+                        new_faces.append([len(vertices)-before_add_vertices + i, boundary_edges[i][0], boundary_edges[i][1]])
+                        new_faces.append([len(vertices)-before_add_vertices + i+1, len(vertices)-before_add_vertices + i+0, boundary_edges[i][0]])
+                    else:
+                        new_faces.append([len(vertices)-before_add_vertices + i, boundary_edges[i][1], boundary_edges[i][0]])
+                        new_faces.append([len(vertices)-before_add_vertices + i+1, len(vertices)-before_add_vertices + i+0, boundary_edges[i][1]])
+            elif vertices[boundary_edges[i][0]][1] < 0.0 and vertices[boundary_edges[i][1]][1] < 0.0:
+                if vertices[boundary_edges[i][0]][0] > vertices[boundary_edges[i][1]][0]:
+                    new_faces.append([boundary_edges[i][1], boundary_edges[i][0], len(vertices)-before_add_vertices + i])
+                    new_faces.append([len(vertices)-before_add_vertices + i, boundary_edges[i][0], boundary_edges[i][1]])
+                elif vertices[boundary_edges[i][0]][0] < vertices[boundary_edges[i][1]][0]:
+                    new_faces.append([boundary_edges[i][0], boundary_edges[i][1], len(vertices)-before_add_vertices + i])
+                    new_faces.append([len(vertices)-before_add_vertices + i, boundary_edges[i][0], boundary_edges[i][1]])
 
+        # 古い面と新しい面を結合する
+        all_faces = np.vstack((faces, new_faces))
 
-    # 古い面と新しい面を結合する
-    all_faces = np.vstack((faces, new_faces))
+        # 最終的なメッシュを作成する
+        final_mesh = mesh.Mesh(np.zeros(all_faces.shape[0], dtype=mesh.Mesh.dtype))
+        for i, face in enumerate(all_faces):
+            for j in range(3):
+                final_mesh.vectors[i][j] = vertices[face[j]]
 
-    # 最終的なメッシュを作成する
-    final_mesh = mesh.Mesh(np.zeros(all_faces.shape[0], dtype=mesh.Mesh.dtype))
-    for i, face in enumerate(all_faces):
-        for j in range(3):
-            final_mesh.vectors[i][j] = vertices[face[j]]
-
-    # 最終的なメッシュをファイルに保存する
-    try:
-        final_mesh.save(output_path)
-        print(f"Mesh saved to {output_path}")
-    except Exception as e:
-        print(f"Failed to save the mesh: {e}")
+        # 最終的なメッシュをファイルに保存する
+        try:
+            final_mesh.save(output_path)
+            print(f"Mesh saved to {output_path}")
+        except Exception as e:
+            print(f"Failed to save the mesh: {e}")
 
 # 使用例
 image_path = 'test.png'
