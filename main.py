@@ -14,27 +14,30 @@ def generate_3d_model(image_path, output_path, target_faces=1000):
     if image is None:
         raise ValueError(f"Failed to load image: {image_path}")
     
+    # 画像をグレースケールに変換する
+    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
     # 画像の寸法を取得する
-    height, width = image.shape[:2]
+    height, width = gray_image.shape
     
     # 画像に最大の円を描く
     center = (width // 2, height // 2)
     radius = min(center)
     thickness = 2  # 線がつながるように厚さを増やす
-    cv2.circle(image, center, radius, (0, 255, 0), thickness)  # 緑色
+    cv2.circle(gray_image, center, radius, (0, 0, 0), thickness)  # 白色
     
     # 円のマスクを作成する
-    mask = np.zeros_like(image[:, :, 0])
+    mask = np.zeros_like(gray_image)
     cv2.circle(mask, center, radius, (255, 255, 255), -1)
     
     # 円の外側を緑色（高さ0）に設定する
-    image[mask == 0] = [0, 255, 0]
+    gray_image[mask == 0] = 0
     
-    # 画像をグレースケールに変換する
-    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # 画像を平滑化するためにガウシアンブラーを適用する
+    blurred_image = gray_image#cv2.GaussianBlur(gray_image, (5, 5), 0)
     
     # ピクセル値を0から1の範囲に正規化する
-    normalized_image = gray_image / 255.0
+    normalized_image = blurred_image / 255.0
     
     # 正規化された値を0mmから3mmの範囲にスケーリングする
     z = normalized_image * 3.0
@@ -152,6 +155,7 @@ def generate_3d_model(image_path, output_path, target_faces=1000):
 
     # 一度だけ出現するエッジを見つける
     boundary_edges = [edge for edge, count in edge_count.items() if count == 1]
+    print("Boundary edges:", boundary_edges)
 
     # 境界エッジから頂点を抽出する
     boundary_vertices = set()
@@ -163,11 +167,11 @@ def generate_3d_model(image_path, output_path, target_faces=1000):
     print("Boundary vertices:", boundary_vertices)
 
     # 境界頂点の1cm上に新しい頂点を作成する
-    height_offset = 10.0  # 1cm = 10mm
+    height_offset = 10.0 + 1.0  # 1cm = 10mm
     new_vertices = []
     for v in boundary_vertices:
         new_vertex = np.copy(vertices[v])
-        new_vertex[2] += height_offset
+        new_vertex[2] = height_offset
         new_vertices.append(new_vertex)
     
     new_vertices = np.array(new_vertices)
@@ -191,8 +195,8 @@ def generate_3d_model(image_path, output_path, target_faces=1000):
         v2 = boundary_vertices[(i + 1) % num_boundary_vertices]
         v1_new = num_vertices + i
         v2_new = num_vertices + (i + 1) % num_boundary_vertices
-        new_faces.append([v1, v1_new, v2])
-        new_faces.append([v1_new, v2_new, v2])
+        new_faces.append([v1, v2, v1_new])
+        new_faces.append([v2, v2_new, v1_new])
 
     # 古い面と新しい面を結合する
     all_faces = np.vstack((faces, new_faces))

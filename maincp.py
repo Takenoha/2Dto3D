@@ -169,9 +169,9 @@ def generate_3d_model(image_path, output_path, target_faces=1000):
             tmp = np.copy(vertices[boundary_edges[i][0]])
             tmp[2] += height_offset
             new_boundary_vertices.append(tmp)
-            used_vertices.add(boundary_edges[i][0])
-        if boundary_edges[i][1] not in used_vertices:
-            tmp2 = np.copy(vertices[boundary_edges[i][1]])
+            used_vertices.add(v1)
+        if v2 not in used_vertices:
+            tmp2 = np.copy(vertices[v2])
             tmp2[2] += height_offset
             new_boundary_vertices.append(tmp2)    
             used_vertices.add(boundary_edges[i][1])
