@@ -99,6 +99,7 @@ def generate_3d_model(image_path, output_path, target_faces=1000):
         new_boundary_vertices.append(new_vertex)
         new_vertex_indices.append(len(vertices) + i)
     print(new_vertex_indices)
+    # 中心の頂点を作る
     new_boundary_vertices.append([center[0], center[1], height_offset])
     new_vertex_indices.append(len(vertices) + len(boundary_array))
     vertices = np.vstack((vertices, new_boundary_vertices))
@@ -106,7 +107,7 @@ def generate_3d_model(image_path, output_path, target_faces=1000):
     for i in range(len(boundary_array) - 1):
         new_faces.append([boundary_array[i],  new_vertex_indices[i],boundary_array[i + 1]])
         new_faces.append([boundary_array[i + 1], new_vertex_indices[i], new_vertex_indices[i + 1]])
-        new_faces.append([new_vertex_indices[i+1], new_vertex_indices[i],new_vertex_indices[-1]])
+        new_faces.append([new_vertex_indices[i + 1], new_vertex_indices[i],new_vertex_indices[-1]])
     
     # 古い面と新しい面を結合する
     all_faces = np.vstack((faces, new_faces))
@@ -123,7 +124,7 @@ def generate_3d_model(image_path, output_path, target_faces=1000):
         print(f"Mesh saved to {output_path}")
     except Exception as e:
         print(f"Failed to save the mesh: {e}")
-
+    print(len(vertices))
 # 使用例
 image_path = 'test.png'
 output_path = 'output_model_with_boundary.stl'
